@@ -5,6 +5,8 @@
 using namespace std;
 using namespace cv;
 
+Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
+
 /** PROCESSING AND LOCALIZATION **/
 vector<cv::Vec3d> transtoe0 {{0.19,0.055,0.0},     //0 fixed marker in dM
                                   {0.19,0.4113,0.0},    //1 fixed marker
