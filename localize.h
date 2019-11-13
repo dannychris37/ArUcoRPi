@@ -2,6 +2,10 @@
 #include "opencv2/aruco.hpp"
 #include <iostream>
 
+#define USE_VIDEO_FILE		1
+#define VIDEO_FILE			"aruco-vid1.mp4"
+#define CAMERA_NO			1
+
 using namespace std;
 using namespace cv;
 
@@ -38,6 +42,12 @@ markerData dataToSend[100];
 bool markerFound[100] = {false};
 
 // camera matrix and distance coefficients
-vector<Mat> camMatrix, distCoeffs;
+Mat camMatrix, distCoeffs;
+
+vector<bool> sent_data(100);
+
+Matx33d f_rotMat;
+Vec3d f_tvec;
+int f_markerID;
 
 bool found_fixedM = false;

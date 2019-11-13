@@ -1,5 +1,103 @@
 #include "localize.h"
 
+static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
+    cv::FileStorage fs(filename,cv::FileStorage::READ);
+    if(!fs.isOpened())
+        return false;
+    fs["camera_matrix"] >> camMatrix;
+    fs["distortion_coefficients"] >> distCoeffs;
+    return true;
+}
+
+void getEulerAngles(Mat &rotCamerMatrix, Vec3d &eulerAngles) {
+
+    Mat cameraMatrix, rotMatrix, transVect, rotMatrixX,	rotMatrixY, rotMatrixZ;
+
+    double* _r = rotCamerMatrix.ptr<double>();
+
+    double projMatrix[12] = 
+    {	_r[0], _r[1], _r[2], 0,
+	_r[3], _r[4], _r[5], 0,
+        _r[6], _r[7], _r[8], 0
+    };
+
+    decomposeProjectionMatrix( 
+    	Mat(3,4,CV_64FC1,projMatrix),
+        cameraMatrix,
+        rotMatrix,
+        transVect,
+        rotMatrixX,
+        rotMatrixY,
+        rotMatrixZ,
+        eulerAngles
+    );
+}
+
+void makeSense(Vec3d tvec, Vec3d rvec, int markerID, int camera_no){
+    
+    /** Fixed marker IDs **/
+    if(markerID < 50) {
+        
+        Mat rotMatrix;
+
+        // converts a rotation matrix to a 
+        // rotation vector or viceversa
+	Rodrigues(rvec, rotMatrix);
+
+	// transpose rotation matrix
+        transpose(rotMatrix, f_rotMat);
+        f_tvec = -1 * tvec;
+        f_markerID = markerID;
+
+    }
+
+    else{
+        
+        // only moving markers
+        if (markerID > 50){  
+           
+           // if all x pointing in same direction
+            Matx33d rotMattoe0( 
+            	0.0, -1.0, 0.0,
+            	1.0, 0.0, 0.0,
+            	0.0, 0.0, 1.0
+            );
+
+            // 
+            Vec3d reading = 
+            	(rotMattoe0 * (f_rotMat * (tvec + f_tvec))) + 
+            	transtoe0[f_markerID];
+
+            cout << "CAM: using fixed marker ID:" << f_markerID << endl;
+            cout << "CAM: origin to truck :" << markerID << "\t" << reading << endl;
+            
+            cv::Mat rotationMatrix;
+            cv::Rodrigues(rvec, rotationMatrix);
+            cv::Vec3d angle_rot;
+
+            
+            getEulerAngles(rotationMatrix, angle_rot);
+            cout << "CAM: rotation angle(deg):" << "\t" << angle_rot << endl;
+            
+            if (sent_data[markerID-51] == 0){
+                cout << "\nSEND: Cam "<<camera_no<<" first to find marker "<<markerID<<endl;
+                cout << "SEND: Coordinates to send:\t" << reading << endl;
+                cout << "SEND: Angles to send:\t\t" << angle_rot << endl;
+            	// angles in degreee and x,y,z 
+                //UDPfarewell(markerID, reading, angle_rot);
+                sent_data[markerID-51] = 1;
+
+            }
+            
+            else{
+
+                cout << "\nSKIP: Cam "<<camera_no<<" skipped: " << markerID << endl;
+
+            }
+        }
+    }
+}
+
 void processFrame(Mat frame){
 	
 	vector<int> markerIds;
@@ -56,7 +154,7 @@ void processFrame(Mat frame){
 				    markerLength_fixed*0.5f
 				);
 
-			    //makeSense(single_tvec[0], single_rvec[0], markerIds[i], camera_no);
+			    makeSense(single_tvec[0], single_rvec[0], markerIds[i], CAMERA_NO);
 
 			    found_fixedM = 1;
 
@@ -95,7 +193,7 @@ void processFrame(Mat frame){
 				markerLength_moving*0.5f
 			    );
 
-			    //makeSense(single_tvec[0], single_rvec[0], markerIds[i], camera_no);
+			    makeSense(single_tvec[0], single_rvec[0], markerIds[i], CAMERA_NO);
 
 		    }
 		}
@@ -104,7 +202,14 @@ void processFrame(Mat frame){
 
 int main(){
 	
-	VideoCapture cap("aruco-vid1.mp4");
+	VideoCapture cap;
+	
+	if(USE_VIDEO_FILE){
+	    cap.open(VIDEO_FILE);
+	} else {
+	    cap.open(0);
+	}
+	
 	
 	// Check if camera opened successfully
 	if(!cap.isOpened()){
@@ -112,7 +217,14 @@ int main(){
 		return -1;
 	}
 	
+	readCameraParameters("./calibration-files/cameraCalib.yml", camMatrix, distCoeffs);
+	
 	while(1){
+		
+		// assigns 0's to sent_data vector (vector of 2 bools inside image_proc.c)
+		// 1st value is for marker id 51, 2nd is for marker id 52 etc. (markers used on trucks)
+		// used to skip marker if seen again on another camera
+		sent_data.assign(sent_data.size(), 0);
 		
 		Mat frame;
 		
