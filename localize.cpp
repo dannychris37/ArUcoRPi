@@ -68,21 +68,25 @@ void makeSense(Vec3d tvec, Vec3d rvec, int markerID, int camera_no){
             	(rotMattoe0 * (f_rotMat * (tvec + f_tvec))) + 
             	transtoe0[f_markerID];
 
-            cout << "CAM: using fixed marker ID:" << f_markerID << endl;
-            cout << "CAM: origin to truck :" << markerID << "\t" << reading << endl;
+            if(print_flag){
+		cout << "\nCAM: using fixed marker ID:" << f_markerID << endl;
+		cout << "CAM: origin to truck :" << markerID << "\t" << reading << endl;
+	    }
             
-            cv::Mat rotationMatrix;
-            cv::Rodrigues(rvec, rotationMatrix);
-            cv::Vec3d angle_rot;
+            Mat rotationMatrix;
+            Rodrigues(rvec, rotationMatrix);
+            Vec3d angle_rot;
 
             
             getEulerAngles(rotationMatrix, angle_rot);
-            cout << "CAM: rotation angle(deg):" << "\t" << angle_rot << endl;
+            if(print_flag) cout << "CAM: rotation angle(deg):" << "\t" << angle_rot << endl;
             
             if (sent_data[markerID-51] == 0){
-                cout << "\nSEND: Cam "<<camera_no<<" first to find marker "<<markerID<<endl;
-                cout << "SEND: Coordinates to send:\t" << reading << endl;
-                cout << "SEND: Angles to send:\t\t" << angle_rot << endl;
+		if(print_flag){
+		    cout << "\nSEND: Cam "<<camera_no<<" first to find marker "<<markerID<<endl;
+		    cout << "SEND: Coordinates to send:\t" << reading << endl;
+		    cout << "SEND: Angles to send:\t\t" << angle_rot << endl;
+		}
             	// angles in degreee and x,y,z 
                 //UDPfarewell(markerID, reading, angle_rot);
                 sent_data[markerID-51] = 1;
@@ -91,7 +95,9 @@ void makeSense(Vec3d tvec, Vec3d rvec, int markerID, int camera_no){
             
             else{
 
-                cout << "\nSKIP: Cam "<<camera_no<<" skipped: " << markerID << endl;
+                if(print_flag) {
+		    cout << "\nSKIP: Cam "<<camera_no<<" skipped: " << markerID << endl;
+		}
 
             }
         }
@@ -220,6 +226,8 @@ int main(){
 	readCameraParameters("./calibration-files/cameraCalib.yml", camMatrix, distCoeffs);
 	
 	while(1){
+	    
+		if(print_flag) cout<<"\n---------- LOOP START ----------"<<endl;
 		
 		// assigns 0's to sent_data vector (vector of 2 bools inside image_proc.c)
 		// 1st value is for marker id 51, 2nd is for marker id 52 etc. (markers used on trucks)
@@ -238,6 +246,21 @@ int main(){
 			
 		//display frame
 		imshow("Frame", frame);
+		
+		if(print_flag) cout<<"\n----------  LOOP END  ----------"<<endl;
+		
+		if(STATIC_OUTPUT){
+		    if(print_cnt == 10){
+			system("clear");
+			print_flag = true;
+			print_cnt = 0;
+		    } else{
+			print_flag = false;
+			print_cnt++;
+		    }
+		    
+		}
+		    
 		
 		char c=(char)waitKey(25);
 		if(c==27)
