@@ -5,4 +5,7 @@ localize:
 	
 calibrate:
 	g++ -std=c++11 -o calibrate calibrate.cpp $(OPENCV)
+	
+record:
+	g++ -std=c++11 -o record record.cpp $(OPENCV)
 
