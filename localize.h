@@ -1,6 +1,20 @@
+#ifndef HEADER_SEEN
+#define HEADER_SEEN
+
 #include "opencv2/opencv.hpp"
 #include "opencv2/aruco.hpp"
 #include <iostream>
+
+/** UDP libs **/
+
+#include <netdb.h>
+#include <sys/socket.h>
+#include <netinet/in.h>
+#include <netinet/in_systm.h>
+#include <netinet/ip.h>
+#include <netinet/tcp.h>
+#include <arpa/inet.h>
+#include <ctime>
 
 #define USE_VIDEO_FILE		0
 #define VIDEO_FILE			"aruco-vid1.mp4"
@@ -9,6 +23,23 @@
 
 using namespace std;
 using namespace cv;
+
+/** UDP **/
+
+const char *senderIP    = "192.168.0.4";
+const char *receiverIP  = "192.168.0.101";
+
+//OpenCV vector of 8 doubles containing ArUco data
+Vec<double, 8> loc_data{
+    now, 
+    double(markerID), 
+    data[0], 
+    data[1],
+    data[2], 
+    rot[0], 
+    rot[1], 
+    rot[2]
+}; 
 
 Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
@@ -56,3 +87,5 @@ bool found_fixedM = false;
 //printing
 bool print_flag = false;
 int print_cnt = 0;
+
+#endif
