@@ -1,12 +1,10 @@
 #include "localize.h"
 
-/** UDP SEND **/
-
 int port = 3000;
 int socket_status, send_status, rec_status;
 struct sockaddr_in addr;
     
-void UDPset(char *IP){
+void UDPSet(const char *IP){
 
 	// address family set to IPv4
     addr.sin_family = AF_INET;
@@ -38,11 +36,22 @@ void UDPset(char *IP){
     }
 }
 
-void UDPfarewell(int markerID, Vec3d data, Vec3d rot){
+void UDPFarewell(int markerID, Vec3d data, Vec3d rot){
 
-    time_t t = time(0);
-    double now = static_cast<double> (t);
+    t = time(0);
+    now = static_cast<double> (t);
     //std::cout<<"stamps:"<<now<< std::endl;
+
+    loc_data = {
+        now, 
+        double(markerID), 
+        data[0], 
+        data[1],
+        data[2], 
+        rot[0], 
+        rot[1], 
+        rot[2]
+    }; 
     
     // Transmit message
     send_status = sendto(
@@ -62,14 +71,21 @@ void UDPfarewell(int markerID, Vec3d data, Vec3d rot){
 }
 
 void UDPRec(){
-	
+    
+    t = time(0);
+    now = static_cast<double> (t);
+    //std::cout<<"stamps:"<<now<< std::endl;
+
+    socklen_t addr_len = sizeof(addr);
+
     // Receive mesasge
-	rec_status = recvfrom(
-		socket_status, 
-		&loc_data,
-		sizeof(loc_data),
-		(struct sockaddr *)&addr, 
-        sizeof(addr)
+    rec_status = recvfrom(
+        socket_status, 
+        &loc_data,
+        sizeof(loc_data),
+        0,
+        (struct sockaddr *)&addr, 
+        &addr_len
     );
 
     if (rec_status == -1){
@@ -77,5 +93,6 @@ void UDPRec(){
         cout<< "error receiving data"<<"\n error code: "<< rec_status << endl;
 
     }
-	
+
 }
+

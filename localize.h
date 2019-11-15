@@ -24,22 +24,13 @@
 using namespace std;
 using namespace cv;
 
-/** UDP **/
-
 const char *senderIP    = "192.168.0.4";
 const char *receiverIP  = "192.168.0.101";
 
-//OpenCV vector of 8 doubles containing ArUco data
-Vec<double, 8> loc_data{
-    now, 
-    double(markerID), 
-    data[0], 
-    data[1],
-    data[2], 
-    rot[0], 
-    rot[1], 
-    rot[2]
-}; 
+time_t t;
+double now;
+Vec<double, 8> loc_data;
+
 
 Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
