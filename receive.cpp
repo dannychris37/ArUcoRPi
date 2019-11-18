@@ -13,8 +13,6 @@ int main(){
 
 		UDPRec();
 
-		if(print_flag) cout<<endl<<loc_data<<endl;
-
 		if(print_flag) cout<<"\n----------  RECEIVE LOOP END  ----------"<<endl;
 
 		if(STATIC_OUTPUT){

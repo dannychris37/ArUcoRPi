@@ -185,8 +185,13 @@ void UDPRec(){
         s, 
         sizeof s
     );
-    if(print_flag) cout<<"\nUDPRec: received location data contains:"<<endl;
-    if(print_flag) cout<<"UDPRec:  markerID: "<<loc_data[1]<<endl;
+    if(print_flag){
+        cout <<"\nUDPRec: received location data contains:"<<endl;
+        cout<<"UDPRec:  markerID: "<<loc_data[1]<<endl;
+        cout<<"UDPRec:  coordinates: ["<<loc_data[2]<<" , "<<loc_data[3]<<" , "<<loc_data[4]<<endl;
+        cout<<"UDPRec:  rotation: ["<<loc_data[5]<<" , "<<loc_data[6]<<" , "<<loc_data[7]<<"]"<<endl;
+    }
+    
 
 }
 
