@@ -2,9 +2,9 @@
 
 int main(){
 
-	UDPSet(receiverIP);
+	UDPSet(true);
 
-	if(!STATIC_OUTPUT) print_flag = true;
+	print_flag = true;
 
 	while(1){
 
@@ -13,11 +13,7 @@ int main(){
 
 		UDPRec();
 
-		cout<<endl<<loc_data<<endl;
-
-		char c=(char)waitKey(25);
-		if(c==27)
-			break;
+		if(print_flag) cout<<endl<<loc_data<<endl;
 
 		if(print_flag) cout<<"\n----------  RECEIVE LOOP END  ----------"<<endl;
 
@@ -32,6 +28,11 @@ int main(){
 		    }
 		    
 		}
+
+		char c=(char)waitKey(25);
+		if(c==27)
+			break;
+
 		
 	}
 

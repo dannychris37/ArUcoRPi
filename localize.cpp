@@ -89,7 +89,7 @@ void makeSense(Vec3d tvec, Vec3d rvec, int markerID, int camera_no){
 				    cout << "SEND: Angles to send:\t\t" << angle_rot << endl;
 				}
             	// angles in degreee and x,y,z 
-                UDPFarewell(markerID, reading, angle_rot);
+                UDPSend(markerID, reading, angle_rot);
                 sent_data[markerID-51] = 1;
 
             }
@@ -209,7 +209,7 @@ void processFrame(Mat frame){
 
 int main(){
 
-	UDPSet(senderIP);
+	UDPSet(false);
 	
 	VideoCapture cap;
 	

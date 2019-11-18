@@ -9,12 +9,15 @@
 
 #include <netdb.h>
 #include <sys/socket.h>
+#include <sys/types.h>
 #include <netinet/in.h>
 #include <netinet/in_systm.h>
 #include <netinet/ip.h>
 #include <netinet/tcp.h>
 #include <arpa/inet.h>
 #include <ctime>
+#include <unistd.h>
+#include <stdlib.h>
 
 #define USE_VIDEO_FILE		0
 #define VIDEO_FILE			"aruco-vid1.mp4"
@@ -24,8 +27,8 @@
 using namespace std;
 using namespace cv;
 
-const char *senderIP    = "192.168.0.4";
-const char *receiverIP  = "192.168.0.101";
+#define PORT    "3000"
+#define REC_IP  "192.168.0.4"
 
 time_t t;
 double now;
