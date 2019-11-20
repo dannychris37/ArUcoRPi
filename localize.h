@@ -27,26 +27,25 @@
 using namespace std;
 using namespace cv;
 
-#define PORT    "3000"
-#define REC_IP  "192.168.0.4"
+#define RPI_NO      1
+#define CAM_INDEX   1
 
 time_t t;
 double now;
-Vec<double, 8> loc_data;
-
 
 Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
 /** PROCESSING AND LOCALIZATION **/
-vector<cv::Vec3d> transtoe0 {{0.19,0.055,0.0},     //0 fixed marker in dM
-                                  {0.19,0.4113,0.0},    //1 fixed marker
-                                  {0.268,0.0549,0.0},   //2 fixed marker
-                                  {0.343,0.41,0.0},     //3 fixed marker
-                                  {0.5269,0.055,0.0},   //4 fixed marker 
-                                  {0.4865,0.4098,0.0},  //5 fixed marker
-                                  {0.6559,0.0549,0.0},  //6 fixed marker
-                                  {0.6544,0.41,0.0},    //7 fixed marker 
-                                  {0.19,0.4113,0.0}     //8 fixed marker
+vector<Vec3d> transtoe0 {   
+                            {0.19,0.055,0.0},     //0 fixed marker in dM
+                            {0.19,0.4113,0.0},    //1 fixed marker
+                            {0.268,0.0549,0.0},   //2 fixed marker
+                            {0.343,0.41,0.0},     //3 fixed marker
+                            {0.5269,0.055,0.0},   //4 fixed marker 
+                            {0.4865,0.4098,0.0},  //5 fixed marker
+                            {0.6559,0.0549,0.0},  //6 fixed marker
+                            {0.6544,0.41,0.0},    //7 fixed marker 
+                            {0.19,0.4113,0.0}     //8 fixed marker
 };
 
 // only for fixed markers
@@ -64,13 +63,12 @@ typedef struct  {
 	cv::Vec3d angles;
 } markerData;
 
-markerData dataToSend[100];
-bool markerFound[100] = {false};
+markerData dataToProcess[100][6];
 
 // camera matrix and distance coefficients
 Mat camMatrix, distCoeffs;
 
-vector<bool> sent_data(100);
+vector<bool> received_data(100);
 
 Matx33d f_rotMat;
 Vec3d f_tvec;

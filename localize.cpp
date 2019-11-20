@@ -82,25 +82,8 @@ void makeSense(Vec3d tvec, Vec3d rvec, int markerID, int camera_no){
             getEulerAngles(rotationMatrix, angle_rot);
             if(print_flag) cout << "CAM: rotation angle(deg):" << "\t" << angle_rot << endl;
             
-            if (sent_data[markerID-51] == 0){
-				if(print_flag){
-				    cout << "\nSEND: Cam "<<camera_no<<" first to find marker "<<markerID<<endl;
-				    cout << "SEND: Coordinates to send:\t" << reading << endl;
-				    cout << "SEND: Angles to send:\t\t" << angle_rot << endl;
-				}
-            	// angles in degreee and x,y,z 
-                UDPSend(markerID, reading, angle_rot);
-                sent_data[markerID-51] = 1;
-
-            }
+            UDPSend(markerID, f_markerID, reading, angle_rot);
             
-            else{
-
-                if(print_flag) {
-		    		cout << "\nSKIP: Cam "<<camera_no<<" skipped: " << markerID << endl;
-				}
-
-            }
         }
     }
 }
@@ -233,11 +216,6 @@ int main(){
 	while(1){
 	    
 		if(print_flag) cout<<"\n---------- LOCALIZATION LOOP START ----------"<<endl;
-		
-		// assigns 0's to sent_data vector (vector of 2 bools inside image_proc.c)
-		// 1st value is for marker id 51, 2nd is for marker id 52 etc. (markers used on trucks)
-		// used to skip marker if seen again on another camera
-		sent_data.assign(sent_data.size(), 0);
 		
 		Mat frame;
 		
