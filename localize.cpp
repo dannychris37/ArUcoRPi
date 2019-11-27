@@ -2,7 +2,7 @@
 #include "udp.cpp"
 
 static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
-    cv::FileStorage fs(filename,cv::FileStorage::READ);
+    FileStorage fs(filename,FileStorage::READ);
     if(!fs.isOpened())
         return false;
     fs["camera_matrix"] >> camMatrix;
@@ -104,7 +104,7 @@ void processFrame(Mat frame){
 		rejectedCandidates 	// where to store rejected candidates
 	);
 	
-	cv::aruco::drawDetectedMarkers(frame, markerCorners, markerIds);
+	aruco::drawDetectedMarkers(frame, markerCorners, markerIds);
 	
 	// if markers have same dictionary 
     if (markerIds.size() > 0) {
@@ -132,7 +132,7 @@ void processFrame(Mat frame){
 				single_tvec                	// translation vector of fixed marker
 			    );
 
-			    //std::cout<<"fixed markers:"<<markerIds[i]<<std::endl;
+			    //cout<<"fixed markers:"<<markerIds[i]<<endl;
 
 			    // draws X, Y, Z axes
 			    aruco::drawAxis(
@@ -157,7 +157,7 @@ void processFrame(Mat frame){
 
 		for(unsigned int i = 0; i < markerIds.size(); i++){
 
-		    vector<vector<cv::Point2f> > single_markerCorner;
+		    vector<vector<Point2f> > single_markerCorner;
 		    vector<Vec3d> single_rvec,single_tvec;
 		    single_markerCorner.resize(1);
 		    single_markerCorner[0] = markerCorners[i];
@@ -166,21 +166,21 @@ void processFrame(Mat frame){
 		    if(markerIds[i] > 50){
 
 			    aruco::estimatePoseSingleMarkers( 
-				single_markerCorner,       	// marker corners
-				markerLength_moving,       	// size of marker
-				camMatrix,      		// camera calibration parameter (known a priori)
-				distCoeffs,     		// camera calibration parameter (known a priori)
-				single_rvec,               	// rotation vector of moving marker
-				single_tvec                	// translation vector of moving marker
+					single_markerCorner,       	// marker corners
+					markerLength_moving,       	// size of marker
+					camMatrix,      			// camera calibration parameter (known a priori)
+					distCoeffs,     			// camera calibration parameter (known a priori)
+					single_rvec,               	// rotation vector of moving marker
+					single_tvec                	// translation vector of moving marker
 			    );
 
 			    aruco::drawAxis(
-				frame, 
-				camMatrix, 
-				distCoeffs, 
-				single_rvec[0], 
-				single_tvec[0],
-				markerLength_moving*0.5f
+					frame, 
+					camMatrix, 
+					distCoeffs, 
+					single_rvec[0], 
+					single_tvec[0],
+					markerLength_moving*0.5f
 			    );
 
 			    makeSense(single_tvec[0], single_rvec[0], markerIds[i], CAMERA_NO);

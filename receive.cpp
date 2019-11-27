@@ -2,7 +2,7 @@
 
 void fusion(int markerID){
 
-	cv::Vec3d avgAngles, avgCoords;
+	Vec3d avgAngles, avgCoords;
 
 	for(int k = 0; k < 3; k++){
         avgCoords[k] = 0;
@@ -16,10 +16,10 @@ void fusion(int markerID){
         if(dataToProcess[markerID][j].valuesStored){
 
             if(print_flag){
-                std::cout << "\nAVG: Marker " << markerID << " found by camera "<< j << std::endl;
-                std::cout << "AVG: Using fixed marker ID: " << dataToProcess[markerID][j].fixedMarker << std::endl;
-                std::cout << "AVG: Coordinates:\t" << dataToProcess[markerID][j].coords << std::endl;
-                std::cout << "AVG: Angle:\t\t" << dataToProcess[markerID][j].angles << std::endl << std::endl;
+                cout << "\nAVG: Marker " << markerID << " found by camera "<< j << endl;
+                cout << "AVG: Using fixed marker ID: " << dataToProcess[markerID][j].fixedMarker << endl;
+                cout << "AVG: Coordinates:\t" << dataToProcess[markerID][j].coords << endl;
+                cout << "AVG: Angle:\t\t" << dataToProcess[markerID][j].angles << endl << endl;
             }
 
             // For averaging
@@ -83,7 +83,7 @@ int main(){
 		}
 		
 		// perform fusion on dataToProcess
-		for(int i=0; i<100; i++){
+		for(int i=50; i<100; i++){
 			if(received_data[i]){
 				fusion(i);
 			}
