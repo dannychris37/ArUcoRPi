@@ -1,4 +1,5 @@
 #include "localize.h"
+#include "cam_no.h"
 
 #define PORT      "3000"
 #define REC_IP    "192.168.0.4"
@@ -188,7 +189,8 @@ void UDPSend(int markerID, int fixedMarkerID, Vec3d data, Vec3d rot){
     //std::cout<<"stamps:"<<now<< std::endl;
 
     send_data = {
-        now, 
+        now,
+        double(CAM_NO),
         double(markerID),
         double(fixedMarkerID),
         data[0], 
@@ -216,66 +218,79 @@ void UDPSend(int markerID, int fixedMarkerID, Vec3d data, Vec3d rot){
     }
 }
 
-void UDPRec(int camIndex){
+void UDPRec(int threadIndex){
 
     int rec_status;
-    sockaddr_in recAddr;
+    sockaddr_in recv_addr;
     char s[INET6_ADDRSTRLEN];
-    Vec<double,9> recv_data;
-
-    socklen_t addr_len = sizeof(recAddr);
+    Vec<double,10> recv_data;
+    socklen_t addr_len = sizeof(recv_addr);
+    char recv_addr_string[INET_ADDRSTRLEN];
+    int camera_no;
 
     if(print_flag) cout<<"\nUDPRec: waiting to receive message"<<endl;
 
-    // Receive mesasge
-    rec_status = recvfrom(
-        socketFileDescr, 
-        &recv_data,
-        sizeof(recv_data),
-        0,
-        (struct sockaddr *)&recAddr, 
-        &addr_len
-    );
+    bool received_from_thread_cam = false;
 
-    if (rec_status == -1){
+    while(!received_from_thread_cam){
 
-        if(print_flag) cout<< "\nUDPRec: error receiving data"<<"\n error code: "<< rec_status << endl;
+        // Receive mesasge
+        rec_status = recvfrom(
+            socketFileDescr, 
+            &recv_data,
+            sizeof(recv_data),
+            0,
+            (struct sockaddr *)&recv_addr, 
+            &addr_len
+        );
 
+        if (rec_status == -1){
+
+            if(print_flag) cout<< "\nUDPRec: error receiving data"<<"\n error code: "<< rec_status << endl;
+
+
+        }
+
+        // get number of camera that sent
+        camera_no = (int)recv_data[1];
+
+        // convert sender addr to string
+        // inet_ntop(recv_addr.sin_family, &recv_addr.sin_addr, recv_addr_string, sizeof(recv_addr_string));
+
+        // if received from cam1 else cam2 etc.
+        if(threadIndex == 0 && camera_no == 3){
+            received_from_thread_cam = true;
+        } else if(threadIndex == 1 && camera_no == 4){
+            received_from_thread_cam = true;
+        }
 
     }
 
-    if(print_flag) cout<<"\nUDPRec: Message received.."<<endl;
-    inet_ntop(
-        recAddr.sin_family,
-        (struct sockaddr *)&recAddr.sin_addr,
-        s, 
-        sizeof s
-    );
+    if(print_flag) cout<<"\nUDPRec: Message received from camera "<<camera_no<<endl;
 
-    int markerID = recv_data[1];
+    int markerID = recv_data[2];
+    int camera_index = camera_no - 1;
 
-    dataToProcess[markerID][camIndex].fixedMarker = recv_data[2];
-    dataToProcess[markerID][camIndex].coords[0] = recv_data[3];
-    dataToProcess[markerID][camIndex].coords[1] = recv_data[4];
-    dataToProcess[markerID][camIndex].coords[2] = recv_data[5];
-    dataToProcess[markerID][camIndex].angles[0] = recv_data[6];
-    dataToProcess[markerID][camIndex].angles[1] = recv_data[7];
-    dataToProcess[markerID][camIndex].angles[2] = recv_data[8];
-    dataToProcess[markerID][camIndex].valuesStored = true;
+    dataToProcess[markerID][camera_index].fixedMarker = recv_data[3];
+    dataToProcess[markerID][camera_index].coords[0] = recv_data[4];
+    dataToProcess[markerID][camera_index].coords[1] = recv_data[5];
+    dataToProcess[markerID][camera_index].coords[2] = recv_data[6];
+    dataToProcess[markerID][camera_index].angles[0] = recv_data[7];
+    dataToProcess[markerID][camera_index].angles[1] = recv_data[8];
+    dataToProcess[markerID][camera_index].angles[2] = recv_data[9];
+    dataToProcess[markerID][camera_index].valuesStored = true;
     received_data[markerID] = true;
 
     if(print_flag){
-        cout <<"\nUDPRec: received location data contains:"<<endl;
-        cout<<"UDPRec:  - camera "<<camIndex+1<<endl;
-        cout<<"UDPRec:  - markerID: "<<markerID<<endl;
+        cout<<"\nUDPRec:  - markerID: "<<markerID<<endl;
         cout<<"UDPRec:  - coordinates: ["
-            <<dataToProcess[markerID][camIndex].coords[0]<<" , "
-            <<dataToProcess[markerID][camIndex].coords[1]<<" , "
-            <<dataToProcess[markerID][camIndex].coords[2]<<"]"<<endl;
+            <<dataToProcess[markerID][camera_index].coords[0]<<" , "
+            <<dataToProcess[markerID][camera_index].coords[1]<<" , "
+            <<dataToProcess[markerID][camera_index].coords[2]<<"]"<<endl;
         cout<<"UDPRec:  - rotation: ["
-            <<dataToProcess[markerID][camIndex].angles[0]<<" , "
-            <<dataToProcess[markerID][camIndex].angles[1]<<" , "
-            <<dataToProcess[markerID][camIndex].angles[2]<<"]"<<endl;
+            <<dataToProcess[markerID][camera_index].angles[0]<<" , "
+            <<dataToProcess[markerID][camera_index].angles[1]<<" , "
+            <<dataToProcess[markerID][camera_index].angles[2]<<"]"<<endl;
     }
     
 

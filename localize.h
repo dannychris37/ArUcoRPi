@@ -19,6 +19,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+//thread libs
+#include <thread>
+#include <mutex>         
+#include <condition_variable>
+
 #define USE_VIDEO_FILE		0
 #define VIDEO_FILE			"aruco-vid1.mp4"
 #define CAMERA_NO			1
@@ -26,9 +31,6 @@
 
 using namespace std;
 using namespace cv;
-
-#define RPI_NO      1
-#define CAM_INDEX   1
 
 time_t t;
 double now;

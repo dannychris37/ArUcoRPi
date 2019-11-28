@@ -1,5 +1,7 @@
 #include "udp.cpp"
 
+#define RPI_NO      2
+
 void fusion(int markerID){
 
 	Vec3d avgAngles, avgCoords;
@@ -16,7 +18,7 @@ void fusion(int markerID){
         if(dataToProcess[markerID][j].valuesStored){
 
             if(print_flag){
-                cout << "\nAVG: Marker " << markerID << " found by camera "<< j << endl;
+                cout << "\nAVG: Marker " << markerID << " found by camera "<< j+1 << endl;
                 cout << "AVG: Using fixed marker ID: " << dataToProcess[markerID][j].fixedMarker << endl;
                 cout << "AVG: Coordinates:\t" << dataToProcess[markerID][j].coords << endl;
                 cout << "AVG: Angle:\t\t" << dataToProcess[markerID][j].angles << endl << endl;
@@ -60,6 +62,7 @@ int main(){
 
 	UDPSet(true);
 
+	thread t[RPI_NO];
 	print_flag = true;
 
 	while(1){
@@ -79,7 +82,11 @@ int main(){
 
 	    // receive and store data in dataToProcess
 		for(int i=0; i<RPI_NO; i++){
-			UDPRec(i);
+			t[i] = thread(UDPRec, i);
+		}
+
+		for(int i=0; i<RPI_NO; i++){
+			t[i].join();
 		}
 		
 		// perform fusion on dataToProcess

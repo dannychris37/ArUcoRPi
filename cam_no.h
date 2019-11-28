@@ -1,0 +1,1 @@
+#define CAM_NO	0

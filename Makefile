@@ -10,7 +10,7 @@ record:
 	g++ -std=c++11 -Wno-psabi -o record record.cpp $(OPENCV)
 
 receive:
-	g++ -std=c++11 -Wno-psabi -o receive receive.cpp -lexplain $(OPENCV)
+	g++ -std=c++11 -Wno-psabi -o receive receive.cpp -lexplain -lpthread $(OPENCV)
 	
 .PHONY: localize calibrate record receive
 
