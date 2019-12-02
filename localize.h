@@ -4,6 +4,8 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/aruco.hpp"
 #include <iostream>
+#include <sys/time.h>
+#include <time.h>
 
 /** UDP libs **/
 
@@ -26,16 +28,11 @@
 
 #define USE_VIDEO_FILE		0
 #define VIDEO_FILE			"aruco-vid1.mp4"
-#define CAMERA_NO			1
-#define STATIC_OUTPUT		1
+#define MILLION                    1000000L
+#define RPI_NO                     2
 
 using namespace std;
 using namespace cv;
-
-time_t t;
-double now;
-
-Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(cv::aruco::DICT_6X6_250);
 
 /** PROCESSING AND LOCALIZATION **/
 vector<Vec3d> transtoe0 {   
@@ -50,19 +47,13 @@ vector<Vec3d> transtoe0 {
                             {0.19,0.4113,0.0}     //8 fixed marker
 };
 
-// only for fixed markers
-const float markerLength_fixed      = 0.0203;
-
-// only for moving markers
-const float markerLength_moving     = 0.013;//0.0097;
-
 
 // struct used to store coordinates and angles of moving markers
 typedef struct  {
 	bool valuesStored;
 	int fixedMarker;
-	cv::Vec3d coords;
-	cv::Vec3d angles;
+	Vec3d coords;
+	Vec3d angles;
 } markerData;
 
 markerData dataToProcess[100][6];

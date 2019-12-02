@@ -34,7 +34,7 @@ void getEulerAngles(Mat &rotCamerMatrix, Vec3d &eulerAngles) {
     );
 }
 
-void makeSense(Vec3d tvec, Vec3d rvec, int markerID, int camera_no){
+void makeSense(Vec3d tvec, Vec3d rvec, int markerID){
     
     /** Fixed marker IDs **/
     if(markerID < 50) {
@@ -92,7 +92,14 @@ void processFrame(Mat frame){
 	
 	vector<int> markerIds;
 	vector<vector<Point2f>> markerCorners,rejectedCandidates;
+	Ptr<aruco::Dictionary> dictionary = aruco::getPredefinedDictionary(aruco::DICT_6X6_250);
 	Ptr<aruco::DetectorParameters> detectorParams= aruco::DetectorParameters::create();
+
+	// only for fixed markers
+	const float markerLength_fixed      = 0.0203;
+
+	// only for moving markers
+	const float markerLength_moving     = 0.013;//0.0097;
     
 	// ArUco module function that performs marker detection
 	aruco::detectMarkers(
@@ -144,7 +151,7 @@ void processFrame(Mat frame){
 				    markerLength_fixed*0.5f
 				);
 
-			    makeSense(single_tvec[0], single_rvec[0], markerIds[i], CAMERA_NO);
+			    makeSense(single_tvec[0], single_rvec[0], markerIds[i]);
 
 			    found_fixedM = 1;
 
@@ -183,7 +190,7 @@ void processFrame(Mat frame){
 					markerLength_moving*0.5f
 			    );
 
-			    makeSense(single_tvec[0], single_rvec[0], markerIds[i], CAMERA_NO);
+			    makeSense(single_tvec[0], single_rvec[0], markerIds[i]);
 
 		    }
 		}
