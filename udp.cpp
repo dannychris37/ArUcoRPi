@@ -1,7 +1,7 @@
 #include "localize.h"
 #include "local_settings.h"
 
-#define REC_IP        "192.168.0.4"
+#define REC_IP        "192.168.0.1"
 #define FINAL_IP      "192.168.0.3"
 
 int socketFileDescrPi;

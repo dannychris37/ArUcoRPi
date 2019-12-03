@@ -1,4 +1,4 @@
-OPENCV = $(shell pkg-config --cflags --libs opencv4)
+OPENCV = $(shell pkg-config --cflags --libs opencv)
 	
 localize:
 	g++ -std=c++11 -Wno-psabi -o localize localize.cpp $(OPENCV)
@@ -10,7 +10,7 @@ record:
 	g++ -std=c++11 -Wno-psabi -o record record.cpp $(OPENCV)
 
 receive:
-	g++ -std=c++11 -Wno-psabi -o receive receive.cpp -lexplain -lpthread $(OPENCV)
+	g++ -std=c++11 -Wno-psabi -o receive receive.cpp -lpthread $(OPENCV)
 	
 .PHONY: localize calibrate record receive
 
