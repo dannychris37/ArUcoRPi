@@ -29,7 +29,7 @@
 #define USE_VIDEO_FILE		0
 #define VIDEO_FILE			"aruco-vid1.mp4"
 #define MILLION                    1000000L
-#define RPI_NO                     2
+#define RPI_NO                     6
 
 using namespace std;
 using namespace cv;
