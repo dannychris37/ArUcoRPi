@@ -1,2 +1,4 @@
 Makefile
 local_settings.h
+localize
+receive
