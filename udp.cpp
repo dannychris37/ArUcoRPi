@@ -16,8 +16,12 @@ void *get_in_addr(struct sockaddr *sa){
 }
 
 const char* getPiPort(){
-    if(CAM_NO == 3) return "3003";
+    if(CAM_NO == 1) return "3001";
+    else if(CAM_NO == 2) return "3002";
+    else if(CAM_NO == 3) return "3003";
     else if(CAM_NO == 4) return "3004";
+    else if(CAM_NO == 5) return "3005";
+    else if(CAM_NO == 6) return "3006";
     else if(CAM_NO == 0) return "3000"; // just so we don't get error on receiver
     else{
         cout<<"Error setting const value for port"<<endl;
@@ -35,7 +39,7 @@ void UDPSet(bool isReceiver){
 
     const char* portPiConst = getPiPort();
     const char* portCentFinal = "3000";
-    const char* portsCent[RPI_NO] = {"3003","3004"};
+    const char* portsCent[RPI_NO] = {"3001", "3002", "3003", "3004", "3005", "3006"};
 
     memset(&hints, 0, sizeof hints);
     hints.ai_family = AF_INET; // AF_INET or AF_INET6 to force version
