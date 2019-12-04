@@ -60,6 +60,7 @@ int main(){
 
 	timespec start, stop;
 	double delta;
+	bool recvd_any;
 
 	UDPSet(true);
 
@@ -85,18 +86,40 @@ int main(){
 	    }
 
 	    // receive and store data in dataToProcess
-		for(int i=0; i<RPI_NO; i++){
-			t[i] = thread(UDPRec, i);
-		}
+		UDPRec();
 
-		for(int i=0; i<RPI_NO; i++){
-			t[i].join();
+		recvd_any = false;
+
+		for(int i = 0; i < RPI_NO; i++){
+			// get number of camera that sent
+		    int camera_no = (int)recv_data_aggr[i][0];
+
+		    if(print_flag) cout<<"\nUDPRec: Message received from camera "<<camera_no<<endl;
+
+		    int markerID = recv_data_aggr[i][1];
+
+		    if( markerID != 0) recvd_any = true;
+
+		    int camera_index = camera_no - 1;
+
+		    dataToProcess[markerID][camera_index].fixedMarker = recv_data_aggr[i][2];
+		    dataToProcess[markerID][camera_index].coords[0] = recv_data_aggr[i][3];
+		    dataToProcess[markerID][camera_index].coords[1] = recv_data_aggr[i][4];
+		    dataToProcess[markerID][camera_index].coords[2] = recv_data_aggr[i][5];
+		    dataToProcess[markerID][camera_index].angles[0] = recv_data_aggr[i][6];
+		    dataToProcess[markerID][camera_index].angles[1] = recv_data_aggr[i][7];
+		    dataToProcess[markerID][camera_index].angles[2] = recv_data_aggr[i][8];
+		    dataToProcess[markerID][camera_index].valuesStored = true;
+		    received_data[markerID] = true;
+
 		}
 		
-		// perform fusion on dataToProcess
-		for(int i=50; i<100; i++){
-			if(received_data[i]){
-				fusion(i);
+		if(recvd_any){
+			// perform fusion on dataToProcess
+			for(int i=50; i<100; i++){
+				if(received_data[i]){
+					fusion(i);
+				}
 			}
 		}
 

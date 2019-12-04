@@ -1,11 +1,13 @@
 #include "localize.h"
 #include "local_settings.h"
 
-#define REC_IP        "192.168.0.1"
-#define FINAL_IP      "192.168.0.3"
+#define REC_IP          "192.168.0.1"
+#define GATHER_IP       "192.168.0.102"
+#define FINAL_IP        "192.168.0.3"
 
 int socketFileDescrPi;
-int socketFileDescrCent[RPI_NO]; 
+int socketFileDescrPiReceiver[RPI_NO];
+int socketFileDescrCent; 
 int socketFileDescrFinal;
 
 const struct sockaddr *sendToAddr, *sendToFinalAddr;
@@ -29,7 +31,7 @@ const char* getPiPort(){
     }
 }
 
-void UDPSet(bool isReceiver){
+void UDPSet(bool isCentral){
 
     int addr_status;
     int send_status, rec_status;
@@ -45,41 +47,9 @@ void UDPSet(bool isReceiver){
     hints.ai_family = AF_INET; // AF_INET or AF_INET6 to force version
     hints.ai_socktype = SOCK_DGRAM;
 
-    if(isReceiver){
-        for(int i=0; i< RPI_NO; i++){
+    if(isCentral){ // if central PC
     
-            if( (addr_status = getaddrinfo(REC_IP, portsCent[i], &hints, &addrInfo)) != 0) {
-
-                cout << "UDPSet:  Error in getting addr info from "<<REC_IP<< endl;
-                cout << gai_strerror(addr_status) << endl;
-                exit(1);
-
-            }
-
-            if( (socketFileDescrCent[i] = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol)) == -1){
-
-                cout<<"UDPSet: Error in socket creation "<< endl;
-                exit(1);
-
-            }
-
-            if( bind(socketFileDescrCent[i], addrInfo->ai_addr, addrInfo->ai_addrlen) == -1){
-                cout<<"UDPSet: Error in binding receiver socket "<< endl;
-                close(socketFileDescrCent[i]);
-                exit(1);
-            }
-
-            // convert fetched IP to a string and print it
-            inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
-            cout<<"UDPSet:  Created and bound socket for: "<<ipstr<<":"<<portsCent[i]<<endl;
-
-        }
-    }
-    else{
-        
-        cout<<"UDPSet: CAM "<<CAM_NO<<" fetching addr info for "<<REC_IP<<":"<<portPiConst<<endl;
-
-        if( (addr_status = getaddrinfo(REC_IP, portPiConst, &hints, &addrInfo)) != 0) {
+        if( (addr_status = getaddrinfo(REC_IP, "3002", &hints, &addrInfo)) != 0) {
 
             cout << "UDPSet:  Error in getting addr info from "<<REC_IP<< endl;
             cout << gai_strerror(addr_status) << endl;
@@ -87,26 +57,24 @@ void UDPSet(bool isReceiver){
 
         }
 
-        if( (socketFileDescrPi = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol)) == -1){
+        if( (socketFileDescrCent = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol)) == -1){
 
             cout<<"UDPSet: Error in socket creation "<< endl;
             exit(1);
 
         }
 
+        if( bind(socketFileDescrCent, addrInfo->ai_addr, addrInfo->ai_addrlen) == -1){
+            cout<<"UDPSet: Error in binding receiver socket "<< endl;
+            close(socketFileDescrCent);
+            exit(1);
+        }
+
         // convert fetched IP to a string and print it
         inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
-        cout<<"UDPSet:  Created and bound socket for: "<<ipstr<<":"<<portPiConst<<endl;
+        cout<<"UDPSet:  Created and bound socket for: "<<ipstr<<":"<<portsCent[2]<<endl;
 
-        sendToAddr = addrInfo->ai_addr;
-        sendToAddrLen = addrInfo->ai_addrlen;
-        
-        cout<<"UDPSet: sendToAddr set to "<< inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)sendToAddr), ipstr, sizeof ipstr)<<endl;
-    }
-
-    // need to create extra socket for final sending
-    if(isReceiver){
-
+        // need to create extra socket for final sending
         if ( (addr_status = getaddrinfo(FINAL_IP, portCentFinal, &hints, &addrInfo)) != 0) {
 
             cout << "UDPSet:  Error in getting addr info from "<<FINAL_IP<< endl;
@@ -129,6 +97,89 @@ void UDPSet(bool isReceiver){
         sendToFinalAddr = addrInfo->ai_addr;
         sendToFinalAddrLen = addrInfo->ai_addrlen;
 
+    }
+    else{ // if pi
+        if(CAM_NO != 2){ // sending socket for each CAM (except 2)
+
+            if( (addr_status = getaddrinfo(GATHER_IP, portPiConst, &hints, &addrInfo)) != 0) {
+
+                cout << "UDPSet:  Error in getting addr info from "<<REC_IP<< endl;
+                cout << gai_strerror(addr_status) << endl;
+                exit(1);
+            }
+
+            if( (socketFileDescrPi = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol)) == -1){
+
+                cout<<"UDPSet: Error in socket creation "<< endl;
+                exit(1);
+
+            }
+
+            // convert fetched IP to a string and print it
+            inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
+            cout<<"UDPSet:  Created sending socket for: "<<ipstr<<":"<<portPiConst<<endl;
+
+            sendToAddr = addrInfo->ai_addr;
+            sendToAddrLen = addrInfo->ai_addrlen;
+            
+            cout<<"UDPSet: sendToAddr set to "<< inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)sendToAddr), ipstr, sizeof ipstr)<<endl;
+
+        } else{// create listening sockets for CAM2
+
+            for(int i=0; i< RPI_NO; i++){
+
+                if(i==CAM_NO-1) i++; //skip own port no.
+
+                if( (addr_status = getaddrinfo(GATHER_IP, portsCent[i], &hints, &addrInfo)) != 0) {
+
+                    cout << "UDPSet:  Error in getting addr info from "<<REC_IP<< endl;
+                    cout << gai_strerror(addr_status) << endl;
+                    exit(1);
+                }
+
+                if( (socketFileDescrPiReceiver[i] = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol)) == -1){
+
+                    cout<<"UDPSet: Error in socket creation "<< endl;
+                    exit(1);
+
+                }
+
+                if( bind(socketFileDescrPiReceiver[i], addrInfo->ai_addr, addrInfo->ai_addrlen) == -1){
+                    cout<<"UDPSet: Error in binding receiver socket "<< endl;
+                    close(socketFileDescrPi);
+                    exit(1);
+                }
+
+                // convert fetched IP to a string and print it
+                inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
+                cout<<"UDPSet:  Created and bound listening socket for: "<<ipstr<<":"<<portsCent[i]<<endl;
+            }
+
+            // need to create extra socket for sending to central
+            if( (addr_status = getaddrinfo(REC_IP, portPiConst, &hints, &addrInfo)) != 0) {
+
+                cout << "UDPSet:  Error in getting addr info from "<<REC_IP<< endl;
+                cout << gai_strerror(addr_status) << endl;
+                exit(1);
+            }
+
+            if( (socketFileDescrPi = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol)) == -1){
+
+                cout<<"UDPSet: Error in socket creation "<< endl;
+                exit(1);
+
+            }
+
+            // convert fetched IP to a string and print it
+            inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
+            cout<<"UDPSet:  Created sending socket for: "<<ipstr<<":"<<portPiConst<<endl;
+
+            sendToAddr = addrInfo->ai_addr;
+            sendToAddrLen = addrInfo->ai_addrlen;
+            
+            cout<<"UDPSet: sendToAddr set to "<< inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)sendToAddr), ipstr, sizeof ipstr)<<endl;
+
+        }
     }
 
     // don't do this or sendTo(Final)Addr pointers will point to freed memory
@@ -215,12 +266,36 @@ void UDPSend(int markerID, int fixedMarkerID, Vec3d data, Vec3d rot){
     }
 }
 
-void UDPRec(int threadIndex){
+void UDPSendAggr(){
+
+    int send_status;
+    char ipstr[INET6_ADDRSTRLEN];
+    
+    inet_ntop(AF_INET, get_in_addr((struct sockaddr *)sendToAddr), ipstr, sizeof ipstr);
+    if(print_flag) cout<<"UDPSet:  Sending aggregate data to "<<ipstr<<endl;
+    
+    // Transmit message
+    send_status = sendto(
+        socketFileDescrPi,
+        &recv_data_aggr,
+        sizeof(recv_data_aggr),
+        0,
+        sendToAddr, 
+        sendToAddrLen
+    );
+
+    if (send_status == -1){
+
+        cout<<"\nUDPSend: error sending data"<<"\n error code: "<< send_status << endl;
+
+    }
+}
+
+void UDPRec(){
 
     int rec_status;
     sockaddr_in recv_addr;
     char s[INET6_ADDRSTRLEN];
-    Vec<double,9> recv_data;
     socklen_t addr_len = sizeof(recv_addr);
     char recv_addr_string[INET_ADDRSTRLEN];
     int camera_no;
@@ -229,9 +304,9 @@ void UDPRec(int threadIndex){
 
     // Receive mesasge
     rec_status = recvfrom(
-        socketFileDescrCent[threadIndex], 
-        &recv_data,
-        sizeof(recv_data),
+        socketFileDescrCent, 
+        &recv_data_aggr,
+        sizeof(recv_data_aggr),
         0,
         (struct sockaddr *)&recv_addr, 
         &addr_len
@@ -243,37 +318,40 @@ void UDPRec(int threadIndex){
 
     }
 
-    // get number of camera that sent
-    camera_no = (int)recv_data[0];
-
-    if(print_flag) cout<<"\nUDPRec: Message received from camera "<<camera_no<<endl;
-
-    int markerID = recv_data[1];
-    int camera_index = camera_no - 1;
-
-    dataToProcess[markerID][camera_index].fixedMarker = recv_data[2];
-    dataToProcess[markerID][camera_index].coords[0] = recv_data[3];
-    dataToProcess[markerID][camera_index].coords[1] = recv_data[4];
-    dataToProcess[markerID][camera_index].coords[2] = recv_data[5];
-    dataToProcess[markerID][camera_index].angles[0] = recv_data[6];
-    dataToProcess[markerID][camera_index].angles[1] = recv_data[7];
-    dataToProcess[markerID][camera_index].angles[2] = recv_data[8];
-    dataToProcess[markerID][camera_index].valuesStored = true;
-    received_data[markerID] = true;
-
-    if(print_flag){
-        cout<<"\nUDPRec:  - markerID: "<<markerID<<endl;
-        cout<<"UDPRec:  - coordinates: ["
-            <<dataToProcess[markerID][camera_index].coords[0]<<" , "
-            <<dataToProcess[markerID][camera_index].coords[1]<<" , "
-            <<dataToProcess[markerID][camera_index].coords[2]<<"]"<<endl;
-        cout<<"UDPRec:  - rotation: ["
-            <<dataToProcess[markerID][camera_index].angles[0]<<" , "
-            <<dataToProcess[markerID][camera_index].angles[1]<<" , "
-            <<dataToProcess[markerID][camera_index].angles[2]<<"]"<<endl;
-    }
-    
-
-
 }
 
+void UDPRecAggr(int threadIndex){
+    
+    int rec_status;
+    sockaddr_in recv_addr;
+    char s[INET6_ADDRSTRLEN];
+    Vec<double,9> recv_data;
+    socklen_t addr_len = sizeof(recv_addr);
+    char recv_addr_string[INET_ADDRSTRLEN];
+    int camera_no;
+
+    // Receive mesasge
+    rec_status = recvfrom(
+        socketFileDescrPiReceiver[threadIndex], 
+        &recv_data,
+        sizeof(recv_data),
+        0,
+        (struct sockaddr *)&recv_addr, 
+        &addr_len
+    );
+    
+    if (rec_status == -1){
+
+        if(print_flag) cout<< "\nUDPRec: error receiving data"<<"\n error code: "<< rec_status << endl;
+
+    }
+
+    // get number of camera that sent
+    camera_no = (int)recv_data[0];
+    
+    if(print_flag) cout<<"\nUDPRec: Message received from camera "<<camera_no<<endl;
+    
+    if(recv_data[1] != 0)
+        recv_data_aggr[camera_no - 1] = recv_data;
+    
+}

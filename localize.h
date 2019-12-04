@@ -63,6 +63,8 @@ Mat camMatrix, distCoeffs;
 
 vector<bool> received_data(100);
 
+Vec<double,9> recv_data_aggr[RPI_NO];
+
 Matx33d f_rotMat;
 Vec3d f_tvec;
 int f_markerID;

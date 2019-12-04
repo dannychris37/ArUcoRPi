@@ -1,6 +1,8 @@
 #include "localize.h"
 #include "udp.cpp"
 
+bool marker_found;
+
 static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
     FileStorage fs(filename,FileStorage::READ);
     if(!fs.isOpened())
@@ -82,13 +84,29 @@ void makeSense(Vec3d tvec, Vec3d rvec, int markerID){
             getEulerAngles(rotationMatrix, angle_rot);
             if(print_flag) cout << "CAM: rotation angle(deg):" << "\t" << angle_rot << endl;
             
-            UDPSend(markerID, f_markerID, reading, angle_rot);
-            
+	    if(CAM_NO != 2)
+			UDPSend(markerID, f_markerID, reading, angle_rot);
+	    else{
+			recv_data_aggr[CAM_NO-1][0] = CAM_NO;
+			recv_data_aggr[CAM_NO-1][1] = markerID;
+			recv_data_aggr[CAM_NO-1][2] = f_markerID;
+			recv_data_aggr[CAM_NO-1][3] = reading[0];
+			recv_data_aggr[CAM_NO-1][4] = reading[1];
+			recv_data_aggr[CAM_NO-1][5] = reading[2];
+			recv_data_aggr[CAM_NO-1][6] = angle_rot[0];
+			recv_data_aggr[CAM_NO-1][7] = angle_rot[1];
+			recv_data_aggr[CAM_NO-1][8] = angle_rot[2];
+	    }
+	    
+	    marker_found = true;
+	    
         }
     }
 }
 
 void processFrame(Mat frame){
+    
+	marker_found = false;
 	
 	vector<int> markerIds;
 	vector<vector<Point2f>> markerCorners,rejectedCandidates;
@@ -195,6 +213,12 @@ void processFrame(Mat frame){
 		    }
 		}
 	}
+	
+	if(!marker_found && CAM_NO!=2){
+	    if(print_flag) cout<<"Marker not found, sending 0's"<<endl;
+	    UDPSend(0, 0, {0,0,0}, {0,0,0});
+	}
+	
 }
 
 int main(){
@@ -225,6 +249,7 @@ int main(){
 		if(print_flag) cout<<"\n---------- LOCALIZATION LOOP START ----------"<<endl;
 		
 		Mat frame;
+		thread t[RPI_NO];
 		
 		//capture frame by frame
 		cap >> frame;
@@ -233,6 +258,21 @@ int main(){
 			break;
 			
 		processFrame(frame);
+		
+		if(CAM_NO == 2){// receive all and send
+		
+			for(int i = 0; i<RPI_NO;i++){
+			    if(i==CAM_NO-1) i++;
+			    t[i] = thread(UDPRecAggr, i);
+			}
+			for(int i=0; i<RPI_NO; i++){
+			    if(i==CAM_NO-1) i++;
+			    t[i].join();
+			}
+			
+			UDPSendAggr();
+			
+		}
 			
 		//display frame
 		imshow("Frame", frame);
