@@ -3,12 +3,11 @@
 
 #define REC_IP          "192.168.0.1"
 #define GATHER_IP       "192.168.0.102"
-#define FINAL_IP        "192.168.0.3"
+#define FINAL_IP        "192.168.0.4"
 
 int socketFileDescrPi;
 int socketFileDescrPiReceiver[RPI_NO];
-int socketFileDescrCent; 
-int socketFileDescrFinal;
+int socketFileDescrCent;
 
 const struct sockaddr *sendToAddr, *sendToFinalAddr;
 socklen_t sendToAddrLen, sendToFinalAddrLen;
@@ -49,7 +48,7 @@ void UDPSet(bool isCentral){
 
     if(isCentral){ // if central PC
     
-        if( (addr_status = getaddrinfo(REC_IP, "3002", &hints, &addrInfo)) != 0) {
+        if( (addr_status = getaddrinfo(FINAL_IP, "3002", &hints, &addrInfo)) != 0) {
 
             cout << "UDPSet:  Error in getting addr info from "<<REC_IP<< endl;
             cout << gai_strerror(addr_status) << endl;
@@ -73,29 +72,6 @@ void UDPSet(bool isCentral){
         // convert fetched IP to a string and print it
         inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
         cout<<"UDPSet:  Created and bound socket for: "<<ipstr<<":"<<portsCent[2]<<endl;
-
-        // need to create extra socket for final sending
-        if ( (addr_status = getaddrinfo(FINAL_IP, portCentFinal, &hints, &addrInfo)) != 0) {
-
-            cout << "UDPSet:  Error in getting addr info from "<<FINAL_IP<< endl;
-            cout << gai_strerror(addr_status) << endl;
-            exit(1);
-
-        }
-
-        if ( (socketFileDescrFinal = socket(addrInfo->ai_family, addrInfo->ai_socktype, addrInfo->ai_protocol)) == -1){
-
-            cout<<"UDPSet: Error in socket creation for final sending "<< endl;
-            exit(1);
-
-        }
-
-        // convert fetched IP to a string and print it
-        inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
-        cout<<"UDPSet:  Created final send socket for: "<<ipstr<<":"<<portCentFinal<<endl;
-
-        sendToFinalAddr = addrInfo->ai_addr;
-        sendToFinalAddrLen = addrInfo->ai_addrlen;
 
     }
     else{ // if pi
@@ -146,7 +122,7 @@ void UDPSet(bool isCentral){
 
                 if( bind(socketFileDescrPiReceiver[i], addrInfo->ai_addr, addrInfo->ai_addrlen) == -1){
                     cout<<"UDPSet: Error in binding receiver socket "<< endl;
-                    close(socketFileDescrPi);
+                    close(socketFileDescrPiReceiver[i]);
                     exit(1);
                 }
 
@@ -156,7 +132,7 @@ void UDPSet(bool isCentral){
             }
 
             // need to create extra socket for sending to central
-            if( (addr_status = getaddrinfo(REC_IP, portPiConst, &hints, &addrInfo)) != 0) {
+            if( (addr_status = getaddrinfo(FINAL_IP, portPiConst, &hints, &addrInfo)) != 0) {
 
                 cout << "UDPSet:  Error in getting addr info from "<<REC_IP<< endl;
                 cout << gai_strerror(addr_status) << endl;
@@ -174,10 +150,10 @@ void UDPSet(bool isCentral){
             inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)addrInfo->ai_addr), ipstr, sizeof ipstr);
             cout<<"UDPSet:  Created sending socket for: "<<ipstr<<":"<<portPiConst<<endl;
 
-            sendToAddr = addrInfo->ai_addr;
-            sendToAddrLen = addrInfo->ai_addrlen;
+            sendToFinalAddr = addrInfo->ai_addr;
+            sendToFinalAddrLen = addrInfo->ai_addrlen;
             
-            cout<<"UDPSet: sendToAddr set to "<< inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)sendToAddr), ipstr, sizeof ipstr)<<endl;
+            cout<<"UDPSet: sendToAddr set to "<< inet_ntop(addrInfo->ai_family, get_in_addr((struct sockaddr *)sendToFinalAddr), ipstr, sizeof ipstr)<<endl;
 
         }
     }
@@ -189,7 +165,7 @@ void UDPSet(bool isCentral){
 
 }
 
-void UDPFinalSend(int markerID, Vec3d data, Vec3d rot){
+void UDPSendFinal(int markerID, Vec3d data, Vec3d rot){
 
     int send_status;
     Vec<double,8> send_data;
@@ -213,7 +189,7 @@ void UDPFinalSend(int markerID, Vec3d data, Vec3d rot){
     
     // Transmit message
     send_status = sendto(
-        socketFileDescrFinal,
+        socketFileDescrPi,
         &send_data,
         sizeof(send_data),
         0,
@@ -266,35 +242,11 @@ void UDPSend(int markerID, int fixedMarkerID, Vec3d data, Vec3d rot){
     }
 }
 
-void UDPSendAggr(){
-
-    int send_status;
-    char ipstr[INET6_ADDRSTRLEN];
-    
-    inet_ntop(AF_INET, get_in_addr((struct sockaddr *)sendToAddr), ipstr, sizeof ipstr);
-    if(print_flag) cout<<"UDPSet:  Sending aggregate data to "<<ipstr<<endl;
-    
-    // Transmit message
-    send_status = sendto(
-        socketFileDescrPi,
-        &recv_data_aggr,
-        sizeof(recv_data_aggr),
-        0,
-        sendToAddr, 
-        sendToAddrLen
-    );
-
-    if (send_status == -1){
-
-        cout<<"\nUDPSend: error sending data"<<"\n error code: "<< send_status << endl;
-
-    }
-}
-
 void UDPRec(){
 
     int rec_status;
     sockaddr_in recv_addr;
+    Vec<double,8> recv_data;
     char s[INET6_ADDRSTRLEN];
     socklen_t addr_len = sizeof(recv_addr);
     char recv_addr_string[INET_ADDRSTRLEN];
@@ -305,8 +257,8 @@ void UDPRec(){
     // Receive mesasge
     rec_status = recvfrom(
         socketFileDescrCent, 
-        &recv_data_aggr,
-        sizeof(recv_data_aggr),
+        &recv_data,
+        sizeof(recv_data),
         0,
         (struct sockaddr *)&recv_addr, 
         &addr_len
@@ -316,6 +268,12 @@ void UDPRec(){
 
         if(print_flag) cout<< "\nUDPRec: error receiving data"<<"\n error code: "<< rec_status << endl;
 
+    }
+
+    if(print_flag){
+        cout<<"RECV: Received data for marker "<<recv_data[1]<<endl;
+        cout<<"RECV: Coordinates received:\t["<<recv_data[2]<<","<<recv_data[3]<<","<<recv_data[4]<<"]"<<endl;
+        cout<<"RECV: Angles received:\t\t["<<recv_data[5]<<","<<recv_data[6]<<","<<recv_data[7]<<"]"<< endl;
     }
 
 }
