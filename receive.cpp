@@ -28,19 +28,9 @@ void fusion(int markerID){
                 avgAngles[k] += dataToProcess[markerID][j].angles[k];
             }
             cameraCount++;
-
-            // For diffs
-            /*for(int di = j+1; di < 8; di++){
-                if(dataToProcess[markerID][di].valuesStored){
-                    diffs[j][di][0] = abs(dataToProcess[markerID][di].coords[0] - dataToProcess[markerID][j].coords[0]) * 1000;
-                    diffs[di][j][0] = diffs[j][di][0];
-                    diffs[j][di][1] = abs(dataToProcess[markerID][di].coords[1] - dataToProcess[markerID][j].coords[1]) * 1000;
-                    diffs[di][j][1] = diffs[j][di][1];
-                }
-            }*/
         }
 
-    } // for j
+    } // for j./loop
 
     for(int k = 0; k < 3; k++){
         avgCoords[k] /= cameraCount;
@@ -53,12 +43,12 @@ void fusion(int markerID){
 	    cout << "SEND: Angles to send:\t\t" << avgAngles << endl;
 	}
 
-	UDPFinalSend(markerID, avgAngles, avgCoords);
+	UDPSendFinal(markerID, avgAngles, avgCoords);
 }
 
 int main(){
 
-	timespec start, stop;
+	timespec start, stop, start_proc, stop_proc, start_comm, stop_comm;
 	double delta;
 
 	UDPSet(true);
@@ -84,14 +74,26 @@ int main(){
 	        }
 	    }
 
+	    clock_gettime(CLOCK_MONOTONIC, &start_comm);
+
 	    // receive and store data in dataToProcess
-		for(int i=0; i<RPI_NO; i++){
+		for(int i=0; i<6; i++){
 			t[i] = thread(UDPRec, i);
 		}
 
-		for(int i=0; i<RPI_NO; i++){
+		for(int i=0; i<6; i++){
 			t[i].join();
 		}
+
+		clock_gettime(CLOCK_MONOTONIC, &stop_comm);
+
+		delta = ( stop_comm.tv_sec - start_comm.tv_sec )
+             + (double)( stop_comm.tv_nsec - start_comm.tv_nsec )
+               / (double)MILLION;
+
+        if(print_flag) cout<<"\nTIMECOMM: "<<delta<<endl;
+
+        clock_gettime(CLOCK_MONOTONIC, &start_proc);
 		
 		// perform fusion on dataToProcess
 		for(int i=50; i<100; i++){
@@ -99,6 +101,28 @@ int main(){
 				fusion(i);
 			}
 		}
+
+		clock_gettime(CLOCK_MONOTONIC, &stop_proc);
+
+		delta = ( stop_proc.tv_sec - start_proc.tv_sec )
+             + (double)( stop_proc.tv_nsec - start_proc.tv_nsec )
+               / (double)MILLION;
+
+        if(print_flag) cout<<"\nTIMECOMM: "<<delta<<endl;
+
+		if(print_flag){
+			cout<<"\nPacket sequence numbers:"<<endl;
+            for(int k=1; k<7;k++){
+	            cout<<"CAM"<<k<<"\t\t";
+	        }
+	        cout<<endl;
+	        for(int k=0; k<10;k++){
+	            for(int cam_no=0; cam_no<6; cam_no++){
+	                cout<<seq_nos[k][cam_no]<<"("<<times[k][cam_no]<<")\t";
+	            }
+	            cout<<endl;
+	        }
+	    }
 
 		if(print_flag) cout<<"\n----------  RECEIVE LOOP END  ----------"<<endl;
 
@@ -113,7 +137,7 @@ int main(){
              + (double)( stop.tv_nsec - start.tv_nsec )
                / (double)MILLION;
 
-        if(print_flag) cout<<"\nTIME: Central while loop time: "<<delta<<endl;
+        if(print_flag) cout<<"\nTIMELOOP: "<<delta<<endl;
 
         if(STATIC_OUTPUT){
 		    if(print_cnt == 10){
@@ -124,7 +148,6 @@ int main(){
 				print_flag = false;
 				print_cnt++;
 		    }
-		    
 		}
 		
 	}

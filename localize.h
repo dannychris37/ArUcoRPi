@@ -29,7 +29,9 @@
 #define USE_VIDEO_FILE		0
 #define VIDEO_FILE			"aruco-vid1.mp4"
 #define MILLION                    1000000L
+#define BILLION                    1000000000L
 #define RPI_NO                     6
+#define OUTP_MEM                   1
 
 using namespace std;
 using namespace cv;
@@ -62,6 +64,11 @@ markerData dataToProcess[100][6];
 Mat camMatrix, distCoeffs;
 
 vector<bool> received_data(100);
+int seq_nos[10][6];
+double times[10][6];
+
+timespec start, mark;
+double delta;
 
 Matx33d f_rotMat;
 Vec3d f_tvec;

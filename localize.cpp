@@ -1,6 +1,8 @@
 #include "localize.h"
 #include "udp.cpp"
 
+bool marker_found;
+
 static bool readCameraParameters(string filename, Mat &camMatrix, Mat &distCoeffs) {
     FileStorage fs(filename,FileStorage::READ);
     if(!fs.isOpened())
@@ -83,12 +85,16 @@ void makeSense(Vec3d tvec, Vec3d rvec, int markerID){
             if(print_flag) cout << "CAM: rotation angle(deg):" << "\t" << angle_rot << endl;
             
             UDPSend(markerID, f_markerID, reading, angle_rot);
+
+            marker_found = true;
             
         }
     }
 }
 
 void processFrame(Mat frame){
+
+	marker_found = false;
 	
 	vector<int> markerIds;
 	vector<vector<Point2f>> markerCorners,rejectedCandidates;
@@ -110,6 +116,8 @@ void processFrame(Mat frame){
 		detectorParams,		// params that can be customized during detection
 		rejectedCandidates 	// where to store rejected candidates
 	);
+
+	clock_gettime(CLOCK_MONOTONIC, &mark);
 	
 	aruco::drawDetectedMarkers(frame, markerCorners, markerIds);
 	
@@ -195,6 +203,12 @@ void processFrame(Mat frame){
 		    }
 		}
 	}
+
+	if(!marker_found){
+		if(print_flag) cout<<"\nNo marker found, sending 0's"<<endl;
+		UDPSend(0, 0, {0,0,0}, {0,0,0});
+	}
+
 }
 
 int main(){
@@ -209,7 +223,6 @@ int main(){
 	    cap.open(0);
 	}
 	
-	
 	// Check if camera opened successfully
 	if(!cap.isOpened()){
 		cout << "Error opening video stream or file" << endl;
@@ -219,6 +232,8 @@ int main(){
 	readCameraParameters("./calibration-files/cameraCalib.yml", camMatrix, distCoeffs);
 
 	if(!STATIC_OUTPUT) print_flag = true;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	
 	while(1){
 	    
@@ -231,6 +246,8 @@ int main(){
 		
 		if(frame.empty())
 			break;
+
+		if(print_flag && OUTP_MEM) cout<<"Size of frame is "<<sizeof(frame)<<" bytes"<<endl;
 			
 		processFrame(frame);
 			
@@ -249,8 +266,7 @@ int main(){
 				print_cnt++;
 		    }
 		    
-		}
-		    
+		} 
 		
 		char c=(char)waitKey(25);
 		if(c==27)
