@@ -49,7 +49,7 @@ void fusion(int markerID){
 int main(){
 
 	timespec start, stop, start_proc, stop_proc, start_comm, stop_comm;
-	double delta;
+	double delta_loop, delta_comm, delta_proc;
 
 	UDPSet(true);
 
@@ -87,11 +87,9 @@ int main(){
 
 		clock_gettime(CLOCK_MONOTONIC, &stop_comm);
 
-		delta = ( stop_comm.tv_sec - start_comm.tv_sec )
+		delta_comm = ( stop_comm.tv_sec - start_comm.tv_sec )
              + (double)( stop_comm.tv_nsec - start_comm.tv_nsec )
                / (double)MILLION;
-
-        if(print_flag) cout<<"\nTIMECOMM: "<<delta<<endl;
 
         clock_gettime(CLOCK_MONOTONIC, &start_proc);
 		
@@ -104,11 +102,9 @@ int main(){
 
 		clock_gettime(CLOCK_MONOTONIC, &stop_proc);
 
-		delta = ( stop_proc.tv_sec - start_proc.tv_sec )
+		delta_proc = ( stop_proc.tv_sec - start_proc.tv_sec )
              + (double)( stop_proc.tv_nsec - start_proc.tv_nsec )
                / (double)MILLION;
-
-        if(print_flag) cout<<"\nTIMECOMM: "<<delta<<endl;
 
 		if(print_flag){
 			cout<<"\nPacket sequence numbers:"<<endl;
@@ -133,11 +129,11 @@ int main(){
 		// while loop exeution time measurement
 		clock_gettime(CLOCK_MONOTONIC, &stop);
 
-		delta = ( stop.tv_sec - start.tv_sec )
+		delta_loop = ( stop.tv_sec - start.tv_sec )
              + (double)( stop.tv_nsec - start.tv_nsec )
                / (double)MILLION;
 
-        if(print_flag) cout<<"\nTIMELOOP: "<<delta<<endl;
+        if(print_flag) cout<<"\nTIME(COMM, PROC, LOOP): "<<delta_comm<<","<<delta_proc<<","<<delta_loop<<endl;
 
         if(STATIC_OUTPUT){
 		    if(print_cnt == 10){
